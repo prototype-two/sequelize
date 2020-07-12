@@ -8,46 +8,48 @@
  * Defining these helpers in each query dialect will leave
  * code in dual dependency of abstract <-> specific dialect
  */
-
-const Utils = require('../../../../utils');
+import { addTicks, removeTicks } from '../../../../utils';
 
 /**
  * list of reserved words in PostgreSQL 10
  * source: https://www.postgresql.org/docs/10/static/sql-keywords-appendix.html
- *
- * @private
  */
 const postgresReservedWords = 'all,analyse,analyze,and,any,array,as,asc,asymmetric,authorization,binary,both,case,cast,check,collate,collation,column,concurrently,constraint,create,cross,current_catalog,current_date,current_role,current_schema,current_time,current_timestamp,current_user,default,deferrable,desc,distinct,do,else,end,except,false,fetch,for,foreign,freeze,from,full,grant,group,having,ilike,in,initially,inner,intersect,into,is,isnull,join,lateral,leading,left,like,limit,localtime,localtimestamp,natural,not,notnull,null,offset,on,only,or,order,outer,overlaps,placing,primary,references,returning,right,select,session_user,similar,some,symmetric,table,tablesample,then,to,trailing,true,union,unique,user,using,variadic,verbose,when,where,window,with'.split(
   ','
 );
 
+export interface QuoteIdentifierOptions {
+  /**
+   * @default {false}
+   */
+  force?: boolean;
+  /**
+   * @default {true}
+   */
+  quoteIdentifiers?: boolean;
+}
+
 /**
- *
- * @param {string}  dialect         Dialect name
- * @param {string}  identifier      Identifier to quote
- * @param {object}  [options]
- * @param {boolean} [options.force=false]
- * @param {boolean} [options.quoteIdentifiers=true]
- *
- * @returns {string}
  * @private
  */
-function quoteIdentifier(dialect, identifier, options) {
+export function quoteIdentifier(dialect: string, identifier: string, options?: QuoteIdentifierOptions): string {
   if (identifier === '*') return identifier;
 
-  options = Utils.defaults(options || {}, {
+  options = {
     force: false,
-    quoteIdentifiers: true
-  });
+    quoteIdentifiers: true,
+    ...options
+  };
 
   switch (dialect) {
     case 'sqlite':
     case 'mariadb':
     case 'mysql':
-      return Utils.addTicks(Utils.removeTicks(identifier, '`'), '`');
+      return addTicks(removeTicks(identifier, '`'), '`');
 
     case 'postgres':
-      const rawIdentifier = Utils.removeTicks(identifier, '"');
+      // eslint-disable-next-line no-case-declarations
+      const rawIdentifier = removeTicks(identifier, '"');
 
       if (
         options.force !== true &&
@@ -63,7 +65,7 @@ function quoteIdentifier(dialect, identifier, options) {
         // this way. Hence, we strip quotes if we don't want case sensitivity.
         return rawIdentifier;
       }
-      return Utils.addTicks(rawIdentifier, '"');
+      return addTicks(rawIdentifier, '"');
     case 'mssql':
       return `[${identifier.replace(/[[\]']+/g, '')}]`;
 
@@ -71,17 +73,11 @@ function quoteIdentifier(dialect, identifier, options) {
       throw new Error(`Dialect "${dialect}" is not supported`);
   }
 }
-module.exports.quoteIdentifier = quoteIdentifier;
 
 /**
  * Test if a give string is already quoted
- *
- * @param {string} identifier
- *
- * @returns {boolean}
  * @private
  */
-function isIdentifierQuoted(identifier) {
+export function isIdentifierQuoted(identifier: string): boolean {
   return /^\s*(?:([`"'])(?:(?!\1).|\1{2})*\1\.?)+\s*$/i.test(identifier);
 }
-module.exports.isIdentifierQuoted = isIdentifierQuoted;

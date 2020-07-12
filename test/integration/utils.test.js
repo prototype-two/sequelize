@@ -23,20 +23,6 @@ describe(Support.getTestDialectTeaser('Utils'), () => {
         expect(Utils.underscoredIf('fooBar', false)).to.equal('fooBar');
       });
     });
-
-    describe('camelizeIf', () => {
-      it('is defined', () => {
-        expect(Utils.camelizeIf).to.be.ok;
-      });
-
-      it('camelizes if second param is true', () => {
-        expect(Utils.camelizeIf('foo_bar', true)).to.equal('fooBar');
-      });
-
-      it("doesn't camelize if second param is false", () => {
-        expect(Utils.underscoredIf('fooBar', true)).to.equal('foo_bar');
-      });
-    });
   });
 
   describe('format', () => {
